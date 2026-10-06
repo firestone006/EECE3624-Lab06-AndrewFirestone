@@ -25,6 +25,15 @@
 // global variables for communication between ISRs and main
 const unsigned char TCNT0_COUNT_SET = 0x8E;// Count for 1ms loop (Provided by Prof Hutton)
 // <TBD> Your global variables should go here
+volatile unsigned char tick = 0;
+volatile unsigned char mode = 0;
+unsigned char led = 0;
+unsigned char mode3 = 0;
+unsigned char mode4 = 0;
+unsigned char mode5 = 0;
+unsigned char mode6 = 0;
+unsigned char mode7 = 0;
+
 
 int main(void){
 	// Variables for main
@@ -53,9 +62,11 @@ int main(void){
 	// (Prof Note Two:  You will need to show your own calculations in the 
 	//  Lab Report to verify the TCNT0_COUNT_SET value!)
 	
-	//TCCR0 = (1<<CS02);
-	//TCNT0 = TCNT0_COUNT_SET;
-	//TIMSK = (1<<TOIE0);
+	
+	
+	TCCR0 = (1<<CS02);
+	TCNT0 = TCNT0_COUNT_SET;
+	TIMSK = (1<<TOIE0);
 	
 	// Port Initialization
 	// Using the LED PORTA initilization above and your Lab05 code, 
@@ -64,20 +75,137 @@ int main(void){
 	// change the ones you have, to get the center button working!
 	
 	// <TBD>  Student code here
+	// Configure PD0 (INT0) as input
+	DDRD = 0x00;
+
+	// Enable internal pull-up resistor
+	PORTD = 0xFF;
 	
 	// Interrupt Enable Block
 	// Using your Lab05 code, you will need to update these
 	// lines from 0x00 to have the appropriate mask.
-	EICRA = 0x00;  // <TBD> Needs to be updated!
-	EIMSK = 0x00;  // <TBD> Needs to be updated!
+	EICRA = 0x03;  // <TBD> Needs to be updated!
+	EIMSK = 0x01;  // <TBD> Needs to be updated!
 	// Enable Global Interrupts
 	sei();
 	
 	// Main Loop
 	while (1) {
-		// Your game loop will go here.
+		if (tick<100){
+			continue;
+		}
+		tick = 0;
 		
-		// <TBD>  Game Loop
+		switch (mode) {
+			case 0:
+			// Low ? high
+			if (led == 7) {
+				led = 0;
+				} 
+			else {
+				led++;
+			}
+
+			LEDS = ~(1 << led);
+			break;
+
+			case 1:
+			// High ? low
+			if (led == 0) {
+				led = 7;
+				} 
+			else {
+				led--;
+			}
+
+			LEDS = ~(1 << led);
+			break;
+
+			case 2:
+			// Back and forth
+			if (led == 7){
+				mode3 = 1;
+			}
+			else if (led == 0){
+				mode3 = 0;
+			}
+			if (mode3 == 0) {
+				led++;
+				} 
+			else {
+				led--;
+			}
+			
+
+			LEDS = ~(1 << led);
+			break;
+
+			case 3:
+			if (mode4 == 0xFF){
+				mode4 = 0;
+			}
+			else{
+				mode4++;
+			}
+			LEDS = ~(mode4);
+			break;
+			
+			case 4:
+			if (led == 6 && mode5 == 0){
+				led = 0;
+			}
+			else if(mode5 == 0){
+				led+=2;
+				mode5++;
+			}
+			else if(mode5 == 1){
+				led--;
+				mode5--;
+			}
+			LEDS = ~(1 << led);
+			break;
+			
+			case 5:
+			if (led==7){
+				led=0;
+				mode6++;
+			}
+			else{
+				led++;
+			}
+			if(mode6 == 3){
+				mode6 = 0;
+			}
+			
+			if(mode6==0){
+				LEDS = ~(1 << led);
+			}
+			if(mode6==1){
+				LEDS = ~(3 << led);
+			}
+			if(mode6==2){
+				LEDS = ~(7 << led);
+			}
+			break;
+			
+			case 6:
+			
+			if (led == 0){
+				mode7 = 0;
+			}
+			else if (led == 3){
+				mode7 = 1;
+			}
+			if (mode7 == 0) {
+				led++;
+				} 
+			else {
+				led--;
+			}
+			
+			LEDS = ~((1 << led)|(1 << (7-led)));
+			break;
+		}
 		
 	}
 }
@@ -90,6 +218,9 @@ ISR(TIMER0_OVF_vect){
 	
 	// <TBD>  ISR code for timer interrupt.
 	
+	TCNT0 = TCNT0_COUNT_SET;
+	
+	tick++;
 }
 
 // This is the required format of an ISR routine for a
@@ -98,5 +229,24 @@ ISR(TIMER0_OVF_vect){
 ISR(INT0_vect){
 	
 	// <TBD>  
+	mode++;
+	if(mode == 2){
+		mode3=1;
+	}
+	if(mode == 3){
+		mode4=0;
+	}
+	if(mode == 4){
+		mode5=0;
+	}
+	if(mode == 5){
+		mode6=0;
+	}
+	if(mode == 6){
+		led=0;
+	}
+	if(mode == 7){
+		mode=0;
+	}
 	
 }
